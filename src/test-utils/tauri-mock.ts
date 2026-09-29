@@ -2,6 +2,7 @@ import type { JobListEntry, LaunchdJob, PlistConfig } from "@/types"
 
 const defaultPlistConfig: PlistConfig = {
   label: "",
+  service_description: null,
   program: null,
   program_arguments: null,
   run_at_load: null,
@@ -27,6 +28,7 @@ const fakeJobs: JobListEntry[] = [
     status: "Running",
     last_run_at: String(Date.now()),
     is_home_agent: true,
+    service_description: "Example running agent",
   },
   {
     label: "com.example.stopped-agent",
@@ -37,6 +39,7 @@ const fakeJobs: JobListEntry[] = [
     status: "Unloaded",
     last_run_at: null,
     is_home_agent: false,
+    service_description: null,
   },
   {
     label: "com.apple.system-agent",
@@ -47,6 +50,7 @@ const fakeJobs: JobListEntry[] = [
     status: "Running",
     last_run_at: String(Date.now() - 3600000),
     is_home_agent: false,
+    service_description: null,
   },
 ]
 

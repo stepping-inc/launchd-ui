@@ -114,6 +114,7 @@ export function JobDetail({ plistPath, open, onClose, onEdit }: JobDetailProps) 
               <TabsContent value="config" className="space-y-1">
                 <dl>
                   <DetailRow label="Label" value={job.plist.label} />
+                  <DetailRow label="Description" value={job.plist.service_description} />
                   <DetailRow label="Program" value={job.plist.program} />
                   {job.plist.program_arguments && job.plist.program_arguments.length > 0 && (
                     <div className="grid grid-cols-3 gap-2 py-1.5">

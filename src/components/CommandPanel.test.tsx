@@ -13,6 +13,7 @@ function job(overrides: Partial<LaunchdJob>): LaunchdJob {
     last_run_at: null,
     plist: {
       label: "com.example.agent",
+      service_description: null,
       program: "/usr/bin/true",
       program_arguments: null,
       run_at_load: null,

@@ -105,6 +105,12 @@ export function JobRow({
       onClick={() => onSelect(job)}
     >
       <TableCell className="font-medium truncate max-w-0">{job.label}</TableCell>
+      <TableCell
+        className="text-muted-foreground truncate max-w-0"
+        title={job.service_description ?? undefined}
+      >
+        {job.service_description ?? ""}
+      </TableCell>
       <TableCell>
         <SourceBadge source={job.source} />
       </TableCell>

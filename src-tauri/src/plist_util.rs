@@ -135,6 +135,7 @@ pub fn parse_plist(path: &str) -> Result<PlistConfig, AppError> {
 
     Ok(PlistConfig {
         label,
+        service_description: extract_string(dict, "ServiceDescription"),
         program: extract_string(dict, "Program"),
         program_arguments: extract_string_array(dict, "ProgramArguments"),
         run_at_load: extract_bool(dict, "RunAtLoad"),
@@ -174,6 +175,13 @@ pub fn write_plist(path: &str, config: &PlistConfig) -> Result<(), AppError> {
     let mut dict = plist::Dictionary::new();
 
     dict.insert("Label".to_string(), Value::String(config.label.clone()));
+
+    if let Some(ref description) = config.service_description {
+        dict.insert(
+            "ServiceDescription".to_string(),
+            Value::String(description.clone()),
+        );
+    }
 
     if let Some(ref program) = config.program {
         dict.insert("Program".to_string(), Value::String(program.clone()));
@@ -350,6 +358,7 @@ mod tests {
     fn test_write_and_read_plist() {
         let config = PlistConfig {
             label: "com.example.roundtrip".to_string(),
+            service_description: Some("Roundtrip example".to_string()),
             program: Some("/usr/bin/echo".to_string()),
             program_arguments: Some(vec!["/usr/bin/echo".to_string(), "hello".to_string()]),
             run_at_load: Some(true),
@@ -372,6 +381,10 @@ mod tests {
         let parsed = parse_plist(path).unwrap();
 
         assert_eq!(parsed.label, "com.example.roundtrip");
+        assert_eq!(
+            parsed.service_description,
+            Some("Roundtrip example".to_string())
+        );
         assert_eq!(parsed.program, Some("/usr/bin/echo".to_string()));
         assert_eq!(parsed.run_at_load, Some(true));
         assert_eq!(parsed.keep_alive, Some(false));
