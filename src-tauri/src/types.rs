@@ -28,6 +28,9 @@ pub struct JobListEntry {
     /// True when this looks like a user-authored automation (a script under the home
     /// directory), as opposed to a vendor-installed app. Drives the "Home" filter.
     pub is_home_agent: bool,
+    /// Free-form text from the ServiceDescription key. launchd ignores it; the UI shows it
+    /// so a reader can tell what each job is for.
+    pub service_description: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -42,6 +45,7 @@ pub struct CalendarInterval {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PlistConfig {
     pub label: String,
+    pub service_description: Option<String>,
     pub program: Option<String>,
     pub program_arguments: Option<Vec<String>>,
     pub run_at_load: Option<bool>,
@@ -101,6 +105,7 @@ mod tests {
             status: JobStatus::Running,
             last_run_at: None,
             is_home_agent: false,
+            service_description: None,
         };
         let json = serde_json::to_string(&entry).unwrap();
         let deserialized: JobListEntry = serde_json::from_str(&json).unwrap();

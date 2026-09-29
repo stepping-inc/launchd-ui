@@ -14,6 +14,7 @@ export type JobListEntry = {
   status: JobStatus
   last_run_at: string | null
   is_home_agent: boolean
+  service_description: string | null
 }
 
 export type CalendarInterval = {
@@ -26,6 +27,7 @@ export type CalendarInterval = {
 
 export type PlistConfig = {
   label: string
+  service_description: string | null
   program: string | null
   program_arguments: string[] | null
   run_at_load: boolean | null

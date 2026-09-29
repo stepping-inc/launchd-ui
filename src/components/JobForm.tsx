@@ -69,6 +69,7 @@ function formatArguments(args: string[]): string {
 function emptyConfig(): PlistConfig {
   return {
     label: "",
+    service_description: null,
     program: null,
     program_arguments: null,
     run_at_load: false,

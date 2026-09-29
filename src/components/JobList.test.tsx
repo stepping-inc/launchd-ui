@@ -13,6 +13,7 @@ const mockJobs: JobListEntry[] = [
     status: "Running",
     last_run_at: String(Date.now()),
     is_home_agent: true,
+    service_description: "Runs the example job",
   },
   {
     label: "com.example.stopped",
@@ -23,6 +24,7 @@ const mockJobs: JobListEntry[] = [
     status: "Unloaded",
     last_run_at: null,
     is_home_agent: false,
+    service_description: null,
   },
 ]
 
@@ -79,6 +81,24 @@ describe("JobList", () => {
     )
     expect(screen.getByText("com.example.running")).toBeInTheDocument()
     expect(screen.getByText("com.example.stopped")).toBeInTheDocument()
+  })
+
+  it("renders the ServiceDescription column", () => {
+    render(
+      <JobList
+        jobs={mockJobs}
+        loading={false}
+        onStart={noop}
+        onStop={noop}
+        onRestart={noop}
+        onKickstart={noop}
+        onDelete={noop}
+        onSelect={noop}
+        onRevealInFinder={noop}
+      />
+    )
+    expect(screen.getByText("Description")).toBeInTheDocument()
+    expect(screen.getByText("Runs the example job")).toBeInTheDocument()
   })
 
   it("renders status badges", () => {

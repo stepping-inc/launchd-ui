@@ -121,6 +121,7 @@ pub async fn list_jobs() -> Result<Vec<JobListEntry>, AppError> {
         let last_run_at = get_last_run_at(&config);
         let home_agent = is_home_agent(&source, &config);
         entries.push(JobListEntry {
+            service_description: config.service_description.clone(),
             label: config.label,
             pid,
             last_exit_code: exit_code,
@@ -357,6 +358,7 @@ mod tests {
     fn cfg(program: Option<&str>, args: Option<Vec<&str>>) -> PlistConfig {
         PlistConfig {
             label: "test".to_string(),
+            service_description: None,
             program: program.map(String::from),
             program_arguments: args.map(|a| a.into_iter().map(String::from).collect()),
             run_at_load: None,
