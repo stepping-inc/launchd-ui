@@ -31,6 +31,11 @@ pub struct JobListEntry {
     /// Free-form text from the ServiceDescription key. launchd ignores it; the UI shows it
     /// so a reader can tell what each job is for.
     pub service_description: Option<String>,
+    /// The trigger keys, so the list can say when the job runs without opening the detail.
+    pub run_at_load: Option<bool>,
+    pub keep_alive: Option<bool>,
+    pub start_interval: Option<u64>,
+    pub start_calendar_interval: Option<Vec<CalendarInterval>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -106,6 +111,10 @@ mod tests {
             last_run_at: None,
             is_home_agent: false,
             service_description: None,
+            run_at_load: None,
+            keep_alive: None,
+            start_interval: None,
+            start_calendar_interval: None,
         };
         let json = serde_json::to_string(&entry).unwrap();
         let deserialized: JobListEntry = serde_json::from_str(&json).unwrap();

@@ -53,10 +53,7 @@ export function JobList({
         <TableRow>
           <TableHead>Label</TableHead>
           <TableHead>Description</TableHead>
-          <TableHead className="w-24">Source</TableHead>
-          <TableHead className="w-24">Status</TableHead>
-          <TableHead className="w-16">PID</TableHead>
-          <TableHead className="w-24">Last Run</TableHead>
+          <TableHead className="w-56">Schedule</TableHead>
           <TableHead className="w-28">Actions</TableHead>
         </TableRow>
       </TableHeader>

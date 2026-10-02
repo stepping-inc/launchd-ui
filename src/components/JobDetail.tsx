@@ -15,6 +15,13 @@ import type { LaunchdJob } from "@/types"
 import { getJobDetail, revealInFinder } from "@/lib/invoke"
 import { FolderOpen } from "lucide-react"
 import { formatCalendarIntervals } from "@/lib/calendar-utils"
+import { formatScheduleSummary } from "@/lib/schedule-summary"
+
+const sourceLabels: Record<LaunchdJob["source"], string> = {
+  UserAgent: "User agent",
+  SystemAgent: "System agent",
+  SystemDaemon: "System daemon",
+}
 
 type JobDetailProps = {
   plistPath: string | null
@@ -115,6 +122,9 @@ export function JobDetail({ plistPath, open, onClose, onEdit }: JobDetailProps) 
                 <dl>
                   <DetailRow label="Label" value={job.plist.label} />
                   <DetailRow label="Description" value={job.plist.service_description} />
+                  <DetailRow label="Runs" value={formatScheduleSummary(job.plist)} />
+                  <DetailRow label="Source" value={sourceLabels[job.source]} />
+                  <DetailRow label="Plist" value={job.plist_path} />
                   <DetailRow label="Program" value={job.plist.program} />
                   {job.plist.program_arguments && job.plist.program_arguments.length > 0 && (
                     <div className="grid grid-cols-3 gap-2 py-1.5">
