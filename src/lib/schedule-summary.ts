@@ -7,6 +7,17 @@ export type ScheduleKeys = {
   start_calendar_interval: CalendarInterval[] | null
 }
 
+// The kinds the list can be filtered by. Each one is read from the same keys and the same
+// branches as the summary, so a filter never disagrees with what the Schedule column says.
+export type ScheduleKind =
+  | "daily"
+  | "weekly"
+  | "monthly"
+  | "interval"
+  | "keepalive"
+  | "login"
+  | "launch"
+
 const weekdayShort = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 const monthShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -44,6 +55,14 @@ function timeOf(ci: CalendarInterval): string {
   return has(ci.hour) ? `${pad(ci.hour)}:${minute}` : `hourly :${minute}`
 }
 
+// Yearly dates count as monthly and an hourly minute as daily: both are the nearest of the
+// kinds the filter offers.
+function calendarKind(ci: CalendarInterval): ScheduleKind {
+  if (has(ci.day)) return "monthly"
+  if (has(ci.weekday)) return "weekly"
+  return "daily"
+}
+
 // Weekdays are merged per time ("weekly Mon,Fri 09:00"), the other kinds per prefix
 // ("daily 08:00, 20:00"), so several fire times stay in one short cell.
 function formatCalendar(intervals: CalendarInterval[]): string {
@@ -78,27 +97,50 @@ function formatCalendar(intervals: CalendarInterval[]): string {
     .join(" / ")
 }
 
+function hasCalendar(keys: ScheduleKeys): keys is ScheduleKeys & {
+  start_calendar_interval: CalendarInterval[]
+} {
+  return !!keys.start_calendar_interval && keys.start_calendar_interval.length > 0
+}
+
+function hasInterval(keys: ScheduleKeys): boolean {
+  return has(keys.start_interval) && keys.start_interval > 0
+}
+
+/**
+ * List the kinds of trigger a job has, in the order the summary shows them.
+ */
+export function scheduleKinds(keys: ScheduleKeys): ScheduleKind[] {
+  if (keys.keep_alive) return ["keepalive"]
+
+  const kinds: ScheduleKind[] = []
+  if (hasCalendar(keys)) {
+    for (const ci of keys.start_calendar_interval) {
+      const kind = calendarKind(ci)
+      if (!kinds.includes(kind)) kinds.push(kind)
+    }
+  }
+  if (hasInterval(keys)) kinds.push("interval")
+
+  if (kinds.length === 0) return [keys.run_at_load ? "login" : "launch"]
+  // RunAtLoad next to a calendar is worth showing: the job also runs at login.
+  // Next to a short interval it adds nothing, so it is left out there.
+  if (keys.run_at_load && hasCalendar(keys)) kinds.push("login")
+  return kinds
+}
+
 /**
  * Summarise when a job runs in one short line for the job list.
  */
 export function formatScheduleSummary(keys: ScheduleKeys): string {
-  if (keys.keep_alive) return "常駐（KeepAlive）"
+  const kinds = scheduleKinds(keys)
+  if (kinds[0] === "keepalive") return "常駐（KeepAlive）"
+  if (kinds[0] === "login") return "ログイン時（RunAtLoad のみ）"
+  if (kinds[0] === "launch") return "起動のみ（定期の発火なし）"
 
   const parts: string[] = []
-  if (keys.start_calendar_interval && keys.start_calendar_interval.length > 0) {
-    parts.push(formatCalendar(keys.start_calendar_interval))
-  }
-  if (has(keys.start_interval) && keys.start_interval > 0) {
-    parts.push(formatInterval(keys.start_interval))
-  }
-
-  if (parts.length === 0) {
-    return keys.run_at_load ? "ログイン時（RunAtLoad のみ）" : "起動のみ（定期の発火なし）"
-  }
-  // RunAtLoad next to a calendar is worth showing: the job also runs at login.
-  // Next to a short interval it adds nothing, so it is left out there.
-  if (keys.run_at_load && keys.start_calendar_interval && keys.start_calendar_interval.length > 0) {
-    parts.push("ログイン時")
-  }
+  if (hasCalendar(keys)) parts.push(formatCalendar(keys.start_calendar_interval))
+  if (hasInterval(keys)) parts.push(formatInterval(keys.start_interval as number))
+  if (kinds.includes("login")) parts.push("ログイン時")
   return parts.join(" + ")
 }
