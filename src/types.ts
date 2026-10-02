@@ -15,6 +15,10 @@ export type JobListEntry = {
   last_run_at: string | null
   is_home_agent: boolean
   service_description: string | null
+  run_at_load: boolean | null
+  keep_alive: boolean | null
+  start_interval: number | null
+  start_calendar_interval: CalendarInterval[] | null
 }
 
 export type CalendarInterval = {

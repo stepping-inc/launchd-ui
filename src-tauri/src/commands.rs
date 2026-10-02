@@ -122,6 +122,10 @@ pub async fn list_jobs() -> Result<Vec<JobListEntry>, AppError> {
         let home_agent = is_home_agent(&source, &config);
         entries.push(JobListEntry {
             service_description: config.service_description.clone(),
+            run_at_load: config.run_at_load,
+            keep_alive: config.keep_alive,
+            start_interval: config.start_interval,
+            start_calendar_interval: config.start_calendar_interval.clone(),
             label: config.label,
             pid,
             last_exit_code: exit_code,

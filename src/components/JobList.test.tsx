@@ -14,6 +14,10 @@ const mockJobs: JobListEntry[] = [
     last_run_at: String(Date.now()),
     is_home_agent: true,
     service_description: "Runs the example job",
+    run_at_load: null,
+    keep_alive: null,
+    start_interval: null,
+    start_calendar_interval: [{ minute: 30, hour: 7, day: null, weekday: null, month: null }],
   },
   {
     label: "com.example.stopped",
@@ -25,6 +29,10 @@ const mockJobs: JobListEntry[] = [
     last_run_at: null,
     is_home_agent: false,
     service_description: null,
+    run_at_load: null,
+    keep_alive: null,
+    start_interval: null,
+    start_calendar_interval: null,
   },
 ]
 
@@ -101,7 +109,7 @@ describe("JobList", () => {
     expect(screen.getByText("Runs the example job")).toBeInTheDocument()
   })
 
-  it("renders status badges", () => {
+  it("shows when each job runs and leaves status and PID to the detail view", () => {
     render(
       <JobList
         jobs={mockJobs}
@@ -115,11 +123,14 @@ describe("JobList", () => {
         onRevealInFinder={noop}
       />
     )
-    expect(screen.getByText("Running")).toBeInTheDocument()
-    expect(screen.getByText("Unloaded")).toBeInTheDocument()
+    expect(screen.getByText("Schedule")).toBeInTheDocument()
+    expect(screen.getByText("daily 07:30")).toBeInTheDocument()
+    expect(screen.getByText("起動のみ（定期の発火なし）")).toBeInTheDocument()
+    expect(screen.queryByText("Running")).not.toBeInTheDocument()
+    expect(screen.queryByText("1234")).not.toBeInTheDocument()
   })
 
-  it("renders PID for running job", () => {
+  it("marks a failed last run next to the label", () => {
     render(
       <JobList
         jobs={mockJobs}
@@ -133,7 +144,8 @@ describe("JobList", () => {
         onRevealInFinder={noop}
       />
     )
-    expect(screen.getByText("1234")).toBeInTheDocument()
+    expect(screen.getByLabelText("Last exit code: 78")).toBeInTheDocument()
+    expect(screen.queryByLabelText("Last exit code: 0")).not.toBeInTheDocument()
   })
 
   it('shows "Run now" only for active (non-Unloaded) agents', () => {

@@ -29,6 +29,10 @@ const fakeJobs: JobListEntry[] = [
     last_run_at: String(Date.now()),
     is_home_agent: true,
     service_description: "Example running agent",
+    run_at_load: null,
+    keep_alive: null,
+    start_interval: null,
+    start_calendar_interval: null,
   },
   {
     label: "com.example.stopped-agent",
@@ -40,6 +44,10 @@ const fakeJobs: JobListEntry[] = [
     last_run_at: null,
     is_home_agent: false,
     service_description: null,
+    run_at_load: null,
+    keep_alive: null,
+    start_interval: null,
+    start_calendar_interval: null,
   },
   {
     label: "com.apple.system-agent",
@@ -51,6 +59,10 @@ const fakeJobs: JobListEntry[] = [
     last_run_at: String(Date.now() - 3600000),
     is_home_agent: false,
     service_description: null,
+    run_at_load: null,
+    keep_alive: null,
+    start_interval: null,
+    start_calendar_interval: null,
   },
 ]
 
