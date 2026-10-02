@@ -121,7 +121,7 @@ export function JobDetail({ plistPath, open, onClose, onEdit }: JobDetailProps) 
               <TabsContent value="config" className="space-y-1">
                 <dl>
                   <DetailRow label="Label" value={job.plist.label} />
-                  <DetailRow label="Description" value={job.plist.service_description} />
+                  <DetailRow label="Description" value={job.description} />
                   <DetailRow label="Runs" value={formatScheduleSummary(job.plist)} />
                   <DetailRow label="Source" value={sourceLabels[job.source]} />
                   <DetailRow label="Plist" value={job.plist_path} />

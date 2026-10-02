@@ -11,6 +11,7 @@ function job(overrides: Partial<LaunchdJob>): LaunchdJob {
     pid: 1234,
     last_exit_code: 0,
     last_run_at: null,
+    description: null,
     plist: {
       label: "com.example.agent",
       service_description: null,

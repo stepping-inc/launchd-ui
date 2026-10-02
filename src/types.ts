@@ -10,7 +10,8 @@ export type JobListEntry = {
   status: JobStatus
   last_run_at: string | null
   is_home_agent: boolean
-  service_description: string | null
+  // ServiceDescription, or the description table entry when the plist has none
+  description: string | null
   run_at_load: boolean | null
   keep_alive: boolean | null
   start_interval: number | null
@@ -52,4 +53,5 @@ export type LaunchdJob = {
   last_exit_code: number | null
   plist: PlistConfig
   last_run_at: string | null
+  description: string | null
 }

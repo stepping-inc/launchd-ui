@@ -62,7 +62,7 @@ export function JobRow({
             aria-label={`Last exit code: ${job.last_exit_code}`}
           />
         )}
-        {job.service_description ?? (
+        {job.description ?? (
           <span className="text-muted-foreground">{job.label}</span>
         )}
       </TableCell>
