@@ -100,6 +100,7 @@ pub async fn list_jobs() -> Result<Vec<JobListEntry>, AppError> {
     let loaded_map: HashMap<String, &launchctl::LoadedService> =
         loaded.iter().map(|s| (s.label.clone(), s)).collect();
 
+    let table = plist_util::load_description_table(&plist_util::description_table_path());
     let mut entries = Vec::new();
     for (path, source) in plist_files {
         let config = match plist_util::parse_plist(&path) {
@@ -121,7 +122,7 @@ pub async fn list_jobs() -> Result<Vec<JobListEntry>, AppError> {
         let last_run_at = get_last_run_at(&config);
         let home_agent = is_home_agent(&source, &config);
         entries.push(JobListEntry {
-            service_description: config.service_description.clone(),
+            description: plist_util::resolve_description(&config, &table),
             run_at_load: config.run_at_load,
             keep_alive: config.keep_alive,
             start_interval: config.start_interval,
@@ -172,6 +173,8 @@ pub async fn get_job_detail(plist_path: String) -> Result<LaunchdJob, AppError> 
     };
 
     let last_run_at = get_last_run_at(&plist);
+    let table = plist_util::load_description_table(&plist_util::description_table_path());
+    let description = plist_util::resolve_description(&plist, &table);
     Ok(LaunchdJob {
         label: plist.label.clone(),
         plist_path,
@@ -181,6 +184,7 @@ pub async fn get_job_detail(plist_path: String) -> Result<LaunchdJob, AppError> 
         last_exit_code: exit_code,
         plist,
         last_run_at,
+        description,
     })
 }
 

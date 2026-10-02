@@ -15,7 +15,7 @@ const mockJobs: JobListEntry[] = [
     status: "Running",
     last_run_at: String(Date.now()),
     is_home_agent: true,
-    service_description: "Runs the example job",
+    description: "Runs the example job",
     run_at_load: null,
     keep_alive: null,
     start_interval: null,
@@ -30,7 +30,7 @@ const mockJobs: JobListEntry[] = [
     status: "Unloaded",
     last_run_at: null,
     is_home_agent: false,
-    service_description: null,
+    description: null,
     run_at_load: null,
     keep_alive: null,
     start_interval: null,
@@ -304,5 +304,25 @@ describe("JobList", () => {
     expect(onFiltersChange).toHaveBeenLastCalledWith({ ...noFilters, failedOnly: true })
     await user.click(screen.getByRole("menuitemcheckbox", { name: "Daemon" }))
     expect(onFiltersChange).toHaveBeenLastCalledWith({ ...noFilters, sources: ["SystemDaemon"] })
+  })
+
+  it("shows a description that came from the description table like any other", () => {
+    render(
+      <JobList
+        jobs={[{ ...mockJobs[1], label: "com.google.keystone.agent", description: "Google のアプリの更新" }]}
+        loading={false}
+        filters={noFilters}
+        onFiltersChange={noop}
+        onStart={noop}
+        onStop={noop}
+        onRestart={noop}
+        onKickstart={noop}
+        onDelete={noop}
+        onSelect={noop}
+        onRevealInFinder={noop}
+      />
+    )
+    expect(screen.getByText("Google のアプリの更新")).not.toHaveClass("text-muted-foreground")
+    expect(screen.queryByText("com.google.keystone.agent")).not.toBeInTheDocument()
   })
 })

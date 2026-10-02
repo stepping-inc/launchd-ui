@@ -28,9 +28,9 @@ pub struct JobListEntry {
     /// True when this looks like a user-authored automation (a script under the home
     /// directory), as opposed to a vendor-installed app. Drives the "Home" filter.
     pub is_home_agent: bool,
-    /// Free-form text from the ServiceDescription key. launchd ignores it; the UI shows it
-    /// so a reader can tell what each job is for.
-    pub service_description: Option<String>,
+    /// What the job is for: the ServiceDescription key, or the entry of the description
+    /// table when the plist has no such key (see plist_util::resolve_description).
+    pub description: Option<String>,
     /// The trigger keys, so the list can say when the job runs without opening the detail.
     pub run_at_load: Option<bool>,
     pub keep_alive: Option<bool>,
@@ -76,6 +76,8 @@ pub struct LaunchdJob {
     pub last_exit_code: Option<i32>,
     pub plist: PlistConfig,
     pub last_run_at: Option<String>,
+    /// Same as JobListEntry::description.
+    pub description: Option<String>,
 }
 
 #[cfg(test)]
@@ -110,7 +112,7 @@ mod tests {
             status: JobStatus::Running,
             last_run_at: None,
             is_home_agent: false,
-            service_description: None,
+            description: None,
             run_at_load: None,
             keep_alive: None,
             start_interval: None,

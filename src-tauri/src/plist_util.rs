@@ -27,6 +27,37 @@ fn plist_dirs() -> Vec<(PathBuf, JobSource)> {
     dirs
 }
 
+/// Where the description table lives. It maps a Label to a description for jobs whose plist
+/// has no ServiceDescription, typically jobs installed by other apps: their plists are
+/// rewritten on every update, so the description is kept outside them.
+pub fn description_table_path() -> PathBuf {
+    dirs::home_dir()
+        .expect("could not find home directory")
+        .join("Library/Application Support/launchd-ui/descriptions.json")
+}
+
+/// Read the description table. A missing or unreadable table is treated as empty, so the
+/// list still shows; the jobs then fall back to their label.
+pub fn load_description_table(path: &Path) -> HashMap<String, String> {
+    std::fs::read_to_string(path)
+        .ok()
+        .and_then(|text| serde_json::from_str::<HashMap<String, String>>(&text).ok())
+        .unwrap_or_default()
+}
+
+/// The ServiceDescription of the plist wins; the table only fills in when the key is missing.
+/// The table is keyed by label, which is the file name without .plist when the plist has no
+/// Label key (see parse_plist).
+pub fn resolve_description(
+    config: &PlistConfig,
+    table: &HashMap<String, String>,
+) -> Option<String> {
+    config
+        .service_description
+        .clone()
+        .or_else(|| table.get(&config.label).cloned())
+}
+
 pub fn scan_plist_files() -> Vec<(String, JobSource)> {
     let mut results = Vec::new();
     for (dir, source) in plist_dirs() {
@@ -296,6 +327,73 @@ mod tests {
         file.write_all(xml.as_bytes()).unwrap();
         file.flush().unwrap();
         file
+    }
+
+    #[test]
+    fn test_parse_plist_without_label_uses_file_name() {
+        // Some vendors leave an empty dictionary behind (Google Keystone does). launchd-ui
+        // then names the job after the file, and the description table matches that name.
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict/>
+</plist>"#;
+        let file = create_temp_plist(xml);
+        let path = file.path();
+        let config = parse_plist(path.to_str().unwrap()).unwrap();
+        let stem = path.file_stem().unwrap().to_str().unwrap();
+        assert_eq!(config.label, stem);
+
+        let table = HashMap::from([(stem.to_string(), "From the table".to_string())]);
+        assert_eq!(
+            resolve_description(&config, &table),
+            Some("From the table".to_string())
+        );
+    }
+
+    #[test]
+    fn test_resolve_description_prefers_service_description() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.example.described</string>
+    <key>ServiceDescription</key>
+    <string>From the plist</string>
+</dict>
+</plist>"#;
+        let file = create_temp_plist(xml);
+        let config = parse_plist(file.path().to_str().unwrap()).unwrap();
+        let table = HashMap::from([(
+            "com.example.described".to_string(),
+            "From the table".to_string(),
+        )]);
+        assert_eq!(
+            resolve_description(&config, &table),
+            Some("From the plist".to_string())
+        );
+        assert_eq!(
+            resolve_description(&config, &HashMap::new()),
+            Some("From the plist".to_string())
+        );
+    }
+
+    #[test]
+    fn test_load_description_table() {
+        let mut file = NamedTempFile::with_suffix(".json").unwrap();
+        file.write_all("{\"com.example.vendor\": \"他社の更新\"}".as_bytes())
+            .unwrap();
+        file.flush().unwrap();
+        let table = load_description_table(file.path());
+        assert_eq!(
+            table.get("com.example.vendor"),
+            Some(&"他社の更新".to_string())
+        );
+
+        let broken = create_temp_plist("not json");
+        assert!(load_description_table(broken.path()).is_empty());
+        assert!(load_description_table(Path::new("/nonexistent/descriptions.json")).is_empty());
     }
 
     #[test]
