@@ -1,10 +1,6 @@
 export type JobSource = "UserAgent" | "SystemAgent" | "SystemDaemon"
 export type JobStatus = "Running" | "Loaded" | "Unloaded" | "Unknown"
 
-// Filter values for the source toolbar. "Home" is a virtual filter (a subset of
-// UserAgent) matching user-authored automations, driven by JobListEntry.is_home_agent.
-export type SourceFilter = JobSource | "All" | "Home"
-
 export type JobListEntry = {
   label: string
   pid: number | null

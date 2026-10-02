@@ -1,6 +1,5 @@
 import { useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
-import { SearchBar } from "@/components/SearchBar"
 import { JobList } from "@/components/JobList"
 import { JobDetail } from "@/components/JobDetail"
 import { JobForm } from "@/components/JobForm"
@@ -31,14 +30,8 @@ function App() {
     filteredJobs,
     loading,
     error,
-    search,
-    setSearch,
-    sourceFilter,
-    scheduleFilter,
-    setScheduleFilter,
-    failedOnly,
-    setFailedOnly,
-    setSourceFilter,
+    filters,
+    setFilters,
     refresh,
   } = useJobs()
 
@@ -136,17 +129,6 @@ function App() {
       </header>
 
       <main className="px-4 py-3 space-y-3">
-        <SearchBar
-          search={search}
-          onSearchChange={setSearch}
-          sourceFilter={sourceFilter}
-          onSourceFilterChange={setSourceFilter}
-          scheduleFilter={scheduleFilter}
-          onScheduleFilterChange={setScheduleFilter}
-          failedOnly={failedOnly}
-          onFailedOnlyChange={setFailedOnly}
-        />
-
         {error && (
           <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
             {error}
@@ -163,6 +145,8 @@ function App() {
           <JobList
             jobs={filteredJobs}
             loading={loading}
+            filters={filters}
+            onFiltersChange={setFilters}
             onStart={(job) => handleAction(() => startJob(job.plist_path))}
             onStop={(job) => handleAction(() => stopJob(job.plist_path))}
             onRestart={(job) => handleAction(() => restartJob(job.plist_path))}

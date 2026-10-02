@@ -1,7 +1,9 @@
 import { describe, it, expect, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { JobList } from "./JobList"
 import type { JobListEntry } from "@/types"
+import { noFilters } from "@/lib/job-filters"
 
 const mockJobs: JobListEntry[] = [
   {
@@ -44,6 +46,8 @@ describe("JobList", () => {
       <JobList
         jobs={[]}
         loading={true}
+        filters={noFilters}
+        onFiltersChange={noop}
         onStart={noop}
         onStop={noop}
         onRestart={noop}
@@ -61,6 +65,8 @@ describe("JobList", () => {
       <JobList
         jobs={[]}
         loading={false}
+        filters={noFilters}
+        onFiltersChange={noop}
         onStart={noop}
         onStop={noop}
         onRestart={noop}
@@ -78,6 +84,8 @@ describe("JobList", () => {
       <JobList
         jobs={mockJobs}
         loading={false}
+        filters={noFilters}
+        onFiltersChange={noop}
         onStart={noop}
         onStop={noop}
         onRestart={noop}
@@ -98,6 +106,8 @@ describe("JobList", () => {
       <JobList
         jobs={mockJobs}
         loading={false}
+        filters={noFilters}
+        onFiltersChange={noop}
         onStart={noop}
         onStop={noop}
         onRestart={noop}
@@ -116,6 +126,8 @@ describe("JobList", () => {
       <JobList
         jobs={mockJobs}
         loading={false}
+        filters={noFilters}
+        onFiltersChange={noop}
         onStart={noop}
         onStop={noop}
         onRestart={noop}
@@ -137,6 +149,8 @@ describe("JobList", () => {
       <JobList
         jobs={mockJobs}
         loading={false}
+        filters={noFilters}
+        onFiltersChange={noop}
         onStart={noop}
         onStop={noop}
         onRestart={noop}
@@ -155,6 +169,8 @@ describe("JobList", () => {
       <JobList
         jobs={mockJobs}
         loading={false}
+        filters={noFilters}
+        onFiltersChange={noop}
         onStart={noop}
         onStop={noop}
         onRestart={noop}
@@ -175,6 +191,8 @@ describe("JobList", () => {
       <JobList
         jobs={mockJobs}
         loading={false}
+        filters={noFilters}
+        onFiltersChange={noop}
         onStart={noop}
         onStop={noop}
         onRestart={noop}
@@ -188,5 +206,103 @@ describe("JobList", () => {
     expect(onKickstart).toHaveBeenCalledWith(
       expect.objectContaining({ label: "com.example.running" })
     )
+  })
+
+  it("keeps the header with its filters when nothing matches", () => {
+    render(
+      <JobList
+        jobs={[]}
+        loading={false}
+        filters={{ ...noFilters, failedOnly: true }}
+        onFiltersChange={noop}
+        onStart={noop}
+        onStop={noop}
+        onRestart={noop}
+        onKickstart={noop}
+        onDelete={noop}
+        onSelect={noop}
+        onRevealInFinder={noop}
+      />
+    )
+    expect(screen.getByText("No agents found")).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Filter Description" })).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "Filter Schedule" })).toBeInTheDocument()
+  })
+
+  it("marks only the filtered column header", () => {
+    render(
+      <JobList
+        jobs={mockJobs}
+        loading={false}
+        filters={{ ...noFilters, scheduleKinds: ["daily"] }}
+        onFiltersChange={noop}
+        onStart={noop}
+        onStop={noop}
+        onRestart={noop}
+        onKickstart={noop}
+        onDelete={noop}
+        onSelect={noop}
+        onRevealInFinder={noop}
+      />
+    )
+    expect(screen.getByRole("button", { name: "Filter Schedule" })).toHaveAttribute(
+      "data-active",
+      "true"
+    )
+    expect(screen.getByRole("button", { name: "Filter Description" })).toHaveAttribute(
+      "data-active",
+      "false"
+    )
+  })
+
+  it("adds a kind to the schedule filter from the header menu", async () => {
+    const user = userEvent.setup()
+    const onFiltersChange = vi.fn()
+    render(
+      <JobList
+        jobs={mockJobs}
+        loading={false}
+        filters={{ ...noFilters, scheduleKinds: ["daily"] }}
+        onFiltersChange={onFiltersChange}
+        onStart={noop}
+        onStop={noop}
+        onRestart={noop}
+        onKickstart={noop}
+        onDelete={noop}
+        onSelect={noop}
+        onRevealInFinder={noop}
+      />
+    )
+    await user.click(screen.getByRole("button", { name: "Filter Schedule" }))
+    await user.click(await screen.findByRole("menuitemcheckbox", { name: "weekly" }))
+    expect(onFiltersChange).toHaveBeenCalledWith({
+      ...noFilters,
+      scheduleKinds: ["daily", "weekly"],
+    })
+  })
+
+  it("sets failed-only and sources from the description header menu", async () => {
+    const user = userEvent.setup()
+    const onFiltersChange = vi.fn()
+    render(
+      <JobList
+        jobs={mockJobs}
+        loading={false}
+        filters={noFilters}
+        onFiltersChange={onFiltersChange}
+        onStart={noop}
+        onStop={noop}
+        onRestart={noop}
+        onKickstart={noop}
+        onDelete={noop}
+        onSelect={noop}
+        onRevealInFinder={noop}
+      />
+    )
+    await user.click(screen.getByRole("button", { name: "Filter Description" }))
+    await user.click(await screen.findByRole("menuitemcheckbox", { name: "直近の失敗だけ" }))
+    expect(onFiltersChange).toHaveBeenLastCalledWith({ ...noFilters, failedOnly: true })
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "Daemon" }))
+    expect(onFiltersChange).toHaveBeenLastCalledWith({ ...noFilters, sources: ["SystemDaemon"] })
   })
 })
