@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest"
 import { renderHook, waitFor, act } from "@testing-library/react"
 import { useJobs } from "./useJobs"
 import { resetFakeHandlers, setFakeHandler } from "@/test-utils/tauri-mock"
+import { noFilters } from "@/lib/job-filters"
 
 beforeEach(() => {
   resetFakeHandlers()
@@ -19,7 +20,7 @@ describe("useJobs", () => {
     expect(result.current.error).toBeNull()
   })
 
-  it("filters by search term", async () => {
+  it("filters by the kinds of schedule, any of them", async () => {
     const { result } = renderHook(() => useJobs())
 
     await waitFor(() => {
@@ -27,14 +28,22 @@ describe("useJobs", () => {
     })
 
     act(() => {
-      result.current.setSearch("running")
+      result.current.setFilters({ ...noFilters, scheduleKinds: ["daily"] })
+    })
+    await waitFor(() => {
+      expect(result.current.filteredJobs.map((job) => job.label)).toEqual([
+        "com.example.running-agent",
+      ])
     })
 
+    act(() => {
+      result.current.setFilters({ ...noFilters, scheduleKinds: ["keepalive", "launch"] })
+    })
     await waitFor(() => {
-      expect(result.current.filteredJobs.length).toBe(1)
-      expect(result.current.filteredJobs[0].label).toBe(
-        "com.example.running-agent"
-      )
+      expect(result.current.filteredJobs.map((job) => job.label)).toEqual([
+        "com.example.stopped-agent",
+        "com.apple.system-agent",
+      ])
     })
   })
 
@@ -46,7 +55,7 @@ describe("useJobs", () => {
     })
 
     act(() => {
-      result.current.setSourceFilter("SystemAgent")
+      result.current.setFilters({ ...noFilters, sources: ["SystemAgent"] })
     })
 
     await waitFor(() => {
@@ -55,7 +64,7 @@ describe("useJobs", () => {
     })
   })
 
-  it("filters by Home (user-authored agents)", async () => {
+  it("filters to failed last runs together with the other filters", async () => {
     const { result } = renderHook(() => useJobs())
 
     await waitFor(() => {
@@ -63,86 +72,19 @@ describe("useJobs", () => {
     })
 
     act(() => {
-      result.current.setSourceFilter("Home")
-    })
-
-    await waitFor(() => {
-      expect(result.current.filteredJobs.length).toBe(1)
-      expect(result.current.filteredJobs[0].label).toBe(
-        "com.example.running-agent"
-      )
-      expect(result.current.filteredJobs[0].is_home_agent).toBe(true)
-    })
-  })
-
-  it("matches the search against the description too", async () => {
-    const { result } = renderHook(() => useJobs())
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false)
-    })
-
-    act(() => {
-      result.current.setSearch("example running")
-    })
-
-    await waitFor(() => {
-      expect(result.current.filteredJobs.map((job) => job.label)).toEqual([
-        "com.example.running-agent",
-      ])
-    })
-  })
-
-  it("filters by the kind of schedule", async () => {
-    const { result } = renderHook(() => useJobs())
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false)
-    })
-
-    act(() => {
-      result.current.setScheduleFilter("daily")
-    })
-    await waitFor(() => {
-      expect(result.current.filteredJobs.map((job) => job.label)).toEqual([
-        "com.example.running-agent",
-      ])
-    })
-
-    act(() => {
-      result.current.setScheduleFilter("keepalive")
-    })
-    await waitFor(() => {
-      expect(result.current.filteredJobs.map((job) => job.label)).toEqual([
-        "com.apple.system-agent",
-      ])
-    })
-
-    act(() => {
-      result.current.setScheduleFilter("launch")
+      result.current.setFilters({ ...noFilters, failedOnly: true })
     })
     await waitFor(() => {
       expect(result.current.filteredJobs.map((job) => job.label)).toEqual([
         "com.example.stopped-agent",
       ])
     })
-  })
-
-  it("filters to failed last runs", async () => {
-    const { result } = renderHook(() => useJobs())
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false)
-    })
 
     act(() => {
-      result.current.setFailedOnly(true)
+      result.current.setFilters({ ...noFilters, failedOnly: true, sources: ["SystemAgent"] })
     })
-
     await waitFor(() => {
-      expect(result.current.filteredJobs.map((job) => job.label)).toEqual([
-        "com.example.stopped-agent",
-      ])
+      expect(result.current.filteredJobs).toEqual([])
     })
   })
 
