@@ -9,6 +9,7 @@ import {
 import { TableCell, TableRow } from "@/components/ui/table"
 import type { JobListEntry } from "@/types"
 import { formatScheduleSummary } from "@/lib/schedule-summary"
+import { hasFailedRun } from "@/lib/job-filters"
 import {
   Play,
   Square,
@@ -42,9 +43,10 @@ export function JobRow({
   onRevealInFinder,
 }: JobRowProps) {
   const isUserAgent = job.source === "UserAgent"
-  // The list keeps only the columns that say what a job is and when it runs. A failed
-  // last run is still marked next to the label; the rest is in the detail view.
-  const failed = job.last_exit_code !== null && job.last_exit_code !== 0
+  // The list keeps only the columns that say what a job is and when it runs. The label
+  // stands in, dimmed, for a job without a description, and a failed last run is marked
+  // in front of it; the rest is in the detail view.
+  const failed = hasFailedRun(job)
   const schedule = formatScheduleSummary(job)
 
   return (
@@ -60,10 +62,9 @@ export function JobRow({
             aria-label={`Last exit code: ${job.last_exit_code}`}
           />
         )}
-        {job.label}
-      </TableCell>
-      <TableCell className="truncate max-w-0" title={job.service_description ?? undefined}>
-        {job.service_description ?? ""}
+        {job.service_description ?? (
+          <span className="text-muted-foreground">{job.label}</span>
+        )}
       </TableCell>
       <TableCell className="truncate max-w-0" title={schedule}>
         {schedule}

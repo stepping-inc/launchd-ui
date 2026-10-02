@@ -51,7 +51,6 @@ export function JobList({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Label</TableHead>
           <TableHead>Description</TableHead>
           <TableHead className="w-56">Schedule</TableHead>
           <TableHead className="w-28">Actions</TableHead>

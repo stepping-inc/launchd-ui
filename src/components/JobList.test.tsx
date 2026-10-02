@@ -73,7 +73,7 @@ describe("JobList", () => {
     expect(screen.getByText("No agents found")).toBeInTheDocument()
   })
 
-  it("renders job list with labels", () => {
+  it("shows the description, and the label only for a job without one", () => {
     render(
       <JobList
         jobs={mockJobs}
@@ -87,8 +87,10 @@ describe("JobList", () => {
         onRevealInFinder={noop}
       />
     )
-    expect(screen.getByText("com.example.running")).toBeInTheDocument()
-    expect(screen.getByText("com.example.stopped")).toBeInTheDocument()
+    expect(screen.queryByText("Label")).not.toBeInTheDocument()
+    expect(screen.getByText("Runs the example job")).toBeInTheDocument()
+    expect(screen.queryByText("com.example.running")).not.toBeInTheDocument()
+    expect(screen.getByText("com.example.stopped")).toHaveClass("text-muted-foreground")
   })
 
   it("renders the ServiceDescription column", () => {

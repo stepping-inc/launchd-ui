@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react"
 import type { JobListEntry, SourceFilter } from "@/types"
 import { listJobs } from "@/lib/invoke"
+import { filterJobs, type ScheduleFilter } from "@/lib/job-filters"
 
 type UseJobsReturn = {
   jobs: JobListEntry[]
@@ -11,6 +12,10 @@ type UseJobsReturn = {
   setSearch: (value: string) => void
   sourceFilter: SourceFilter
   setSourceFilter: (value: SourceFilter) => void
+  scheduleFilter: ScheduleFilter
+  setScheduleFilter: (value: ScheduleFilter) => void
+  failedOnly: boolean
+  setFailedOnly: (value: boolean) => void
   refresh: () => Promise<void>
 }
 
@@ -20,6 +25,8 @@ export function useJobs(): UseJobsReturn {
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("All")
+  const [scheduleFilter, setScheduleFilter] = useState<ScheduleFilter>("All")
+  const [failedOnly, setFailedOnly] = useState(false)
 
   const refresh = useCallback(async () => {
     setLoading(true)
@@ -38,17 +45,7 @@ export function useJobs(): UseJobsReturn {
     refresh()
   }, [refresh])
 
-  const filteredJobs = jobs.filter((job) => {
-    const matchesSearch =
-      search === "" || job.label.toLowerCase().includes(search.toLowerCase())
-    const matchesSource =
-      sourceFilter === "All"
-        ? true
-        : sourceFilter === "Home"
-          ? job.is_home_agent
-          : job.source === sourceFilter
-    return matchesSearch && matchesSource
-  })
+  const filteredJobs = filterJobs(jobs, { search, sourceFilter, scheduleFilter, failedOnly })
 
   return {
     jobs,
@@ -59,6 +56,10 @@ export function useJobs(): UseJobsReturn {
     setSearch,
     sourceFilter,
     setSourceFilter,
+    scheduleFilter,
+    setScheduleFilter,
+    failedOnly,
+    setFailedOnly,
     refresh,
   }
 }

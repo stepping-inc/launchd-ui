@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { formatScheduleSummary, type ScheduleKeys } from "@/lib/schedule-summary"
+import { formatScheduleSummary, scheduleKinds, type ScheduleKeys } from "@/lib/schedule-summary"
 import type { CalendarInterval } from "@/types"
 
 const none: ScheduleKeys = {
@@ -89,5 +89,53 @@ describe("formatScheduleSummary", () => {
     )
     expect(formatScheduleSummary({ ...none, run_at_load: true })).toBe("ログイン時（RunAtLoad のみ）")
     expect(formatScheduleSummary(none)).toBe("起動のみ（定期の発火なし）")
+  })
+})
+
+describe("scheduleKinds", () => {
+  it("reads the calendar kinds", () => {
+    expect(scheduleKinds({ ...none, start_calendar_interval: [at({ hour: 7, minute: 30 })] })).toEqual([
+      "daily",
+    ])
+    expect(
+      scheduleKinds({ ...none, start_calendar_interval: [at({ weekday: 6, hour: 9, minute: 0 })] })
+    ).toEqual(["weekly"])
+    expect(
+      scheduleKinds({ ...none, start_calendar_interval: [at({ day: 1, hour: 9, minute: 0 })] })
+    ).toEqual(["monthly"])
+  })
+
+  it("counts yearly dates as monthly and hourly minutes as daily", () => {
+    expect(
+      scheduleKinds({ ...none, start_calendar_interval: [at({ month: 3, day: 1, hour: 9 })] })
+    ).toEqual(["monthly"])
+    expect(scheduleKinds({ ...none, start_calendar_interval: [at({ minute: 15 })] })).toEqual([
+      "daily",
+    ])
+  })
+
+  it("lists every kind a job has, without repeats", () => {
+    expect(
+      scheduleKinds({
+        ...none,
+        run_at_load: true,
+        start_interval: 600,
+        start_calendar_interval: [
+          at({ hour: 8, minute: 0 }),
+          at({ hour: 20, minute: 0 }),
+          at({ weekday: 6, hour: 9, minute: 0 }),
+        ],
+      })
+    ).toEqual(["daily", "weekly", "interval", "login"])
+  })
+
+  it("leaves login out next to an interval alone", () => {
+    expect(scheduleKinds({ ...none, run_at_load: true, start_interval: 30 })).toEqual(["interval"])
+  })
+
+  it("names jobs without a calendar or interval", () => {
+    expect(scheduleKinds({ ...none, keep_alive: true, start_interval: 60 })).toEqual(["keepalive"])
+    expect(scheduleKinds({ ...none, run_at_load: true })).toEqual(["login"])
+    expect(scheduleKinds(none)).toEqual(["launch"])
   })
 })

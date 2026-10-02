@@ -34,6 +34,10 @@ function App() {
     search,
     setSearch,
     sourceFilter,
+    scheduleFilter,
+    setScheduleFilter,
+    failedOnly,
+    setFailedOnly,
     setSourceFilter,
     refresh,
   } = useJobs()
@@ -137,6 +141,10 @@ function App() {
           onSearchChange={setSearch}
           sourceFilter={sourceFilter}
           onSourceFilterChange={setSourceFilter}
+          scheduleFilter={scheduleFilter}
+          onScheduleFilterChange={setScheduleFilter}
+          failedOnly={failedOnly}
+          onFailedOnlyChange={setFailedOnly}
         />
 
         {error && (

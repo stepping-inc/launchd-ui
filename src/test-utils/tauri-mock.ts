@@ -32,7 +32,7 @@ const fakeJobs: JobListEntry[] = [
     run_at_load: null,
     keep_alive: null,
     start_interval: null,
-    start_calendar_interval: null,
+    start_calendar_interval: [{ minute: 30, hour: 7, day: null, weekday: null, month: null }],
   },
   {
     label: "com.example.stopped-agent",
@@ -60,7 +60,7 @@ const fakeJobs: JobListEntry[] = [
     is_home_agent: false,
     service_description: null,
     run_at_load: null,
-    keep_alive: null,
+    keep_alive: true,
     start_interval: null,
     start_calendar_interval: null,
   },

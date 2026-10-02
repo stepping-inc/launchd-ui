@@ -75,6 +75,77 @@ describe("useJobs", () => {
     })
   })
 
+  it("matches the search against the description too", async () => {
+    const { result } = renderHook(() => useJobs())
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+    })
+
+    act(() => {
+      result.current.setSearch("example running")
+    })
+
+    await waitFor(() => {
+      expect(result.current.filteredJobs.map((job) => job.label)).toEqual([
+        "com.example.running-agent",
+      ])
+    })
+  })
+
+  it("filters by the kind of schedule", async () => {
+    const { result } = renderHook(() => useJobs())
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+    })
+
+    act(() => {
+      result.current.setScheduleFilter("daily")
+    })
+    await waitFor(() => {
+      expect(result.current.filteredJobs.map((job) => job.label)).toEqual([
+        "com.example.running-agent",
+      ])
+    })
+
+    act(() => {
+      result.current.setScheduleFilter("keepalive")
+    })
+    await waitFor(() => {
+      expect(result.current.filteredJobs.map((job) => job.label)).toEqual([
+        "com.apple.system-agent",
+      ])
+    })
+
+    act(() => {
+      result.current.setScheduleFilter("launch")
+    })
+    await waitFor(() => {
+      expect(result.current.filteredJobs.map((job) => job.label)).toEqual([
+        "com.example.stopped-agent",
+      ])
+    })
+  })
+
+  it("filters to failed last runs", async () => {
+    const { result } = renderHook(() => useJobs())
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+    })
+
+    act(() => {
+      result.current.setFailedOnly(true)
+    })
+
+    await waitFor(() => {
+      expect(result.current.filteredJobs.map((job) => job.label)).toEqual([
+        "com.example.stopped-agent",
+      ])
+    })
+  })
+
   it("handles error", async () => {
     setFakeHandler("list_jobs", () => {
       throw new Error("Connection failed")
