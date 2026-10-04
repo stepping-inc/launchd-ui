@@ -47,44 +47,50 @@ describe("useJobs", () => {
     })
   })
 
-  it("filters by source", async () => {
+  it("hides the jobs of unchecked description values together with the other filters", async () => {
     const { result } = renderHook(() => useJobs())
 
     await waitFor(() => {
       expect(result.current.loading).toBe(false)
     })
+    expect(result.current.descriptionValues).toEqual(["Example running agent", "(空白)"])
 
     act(() => {
-      result.current.setFilters({ ...noFilters, sources: ["SystemAgent"] })
-    })
-
-    await waitFor(() => {
-      expect(result.current.filteredJobs.length).toBe(1)
-      expect(result.current.filteredJobs[0].source).toBe("SystemAgent")
-    })
-  })
-
-  it("filters to failed last runs together with the other filters", async () => {
-    const { result } = renderHook(() => useJobs())
-
-    await waitFor(() => {
-      expect(result.current.loading).toBe(false)
-    })
-
-    act(() => {
-      result.current.setFilters({ ...noFilters, failedOnly: true })
+      result.current.setFilters({ ...noFilters, hiddenDescriptions: ["(空白)"] })
     })
     await waitFor(() => {
       expect(result.current.filteredJobs.map((job) => job.label)).toEqual([
-        "com.example.stopped-agent",
+        "com.example.running-agent",
       ])
     })
 
     act(() => {
-      result.current.setFilters({ ...noFilters, failedOnly: true, sources: ["SystemAgent"] })
+      result.current.setFilters({
+        scheduleKinds: ["keepalive", "launch"],
+        hiddenDescriptions: ["Example running agent"],
+      })
+    })
+    await waitFor(() => {
+      expect(result.current.filteredJobs.map((job) => job.label)).toEqual([
+        "com.example.stopped-agent",
+        "com.apple.system-agent",
+      ])
+    })
+  })
+
+  it("offers the description values left by the schedule filter", async () => {
+    const { result } = renderHook(() => useJobs())
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false)
+    })
+
+    act(() => {
+      result.current.setFilters({ scheduleKinds: ["daily"], hiddenDescriptions: ["Example running agent"] })
     })
     await waitFor(() => {
       expect(result.current.filteredJobs).toEqual([])
+      expect(result.current.descriptionValues).toEqual(["Example running agent"])
     })
   })
 

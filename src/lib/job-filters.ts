@@ -1,4 +1,4 @@
-import type { JobListEntry, JobSource } from "@/types"
+import type { JobListEntry } from "@/types"
 import { scheduleKinds, type ScheduleKind } from "@/lib/schedule-summary"
 
 /**
@@ -6,11 +6,11 @@ import { scheduleKinds, type ScheduleKind } from "@/lib/schedule-summary"
  */
 export type JobFilters = {
   scheduleKinds: ScheduleKind[]
-  sources: JobSource[]
-  failedOnly: boolean
+  // Description values unchecked in the header menu, so every other value stays shown.
+  hiddenDescriptions: string[]
 }
 
-export const noFilters: JobFilters = { scheduleKinds: [], sources: [], failedOnly: false }
+export const noFilters: JobFilters = { scheduleKinds: [], hiddenDescriptions: [] }
 
 export const scheduleKindOptions: Array<{ value: ScheduleKind; label: string }> = [
   { value: "daily", label: "daily" },
@@ -22,17 +22,33 @@ export const scheduleKindOptions: Array<{ value: ScheduleKind; label: string }> 
   { value: "launch", label: "起動のみ" },
 ]
 
-export const sourceOptions: Array<{ value: JobSource; label: string }> = [
-  { value: "UserAgent", label: "User" },
-  { value: "SystemAgent", label: "System" },
-  { value: "SystemDaemon", label: "Daemon" },
-]
+// The value that stands for every job without a description, as in a spreadsheet filter.
+export const blankDescription = "(空白)"
 
 /**
  * True when the last run ended with a non-zero exit code.
  */
 export function hasFailedRun(job: JobListEntry): boolean {
   return job.last_exit_code !== null && job.last_exit_code !== 0
+}
+
+/**
+ * The description as the list shows it, or the blank value when there is none.
+ */
+export function descriptionValue(job: JobListEntry): string {
+  return job.description?.trim() ? job.description : blankDescription
+}
+
+/**
+ * The distinct description values of the jobs in ascending order, with the blank value last.
+ */
+export function descriptionValues(jobs: JobListEntry[]): string[] {
+  const values = [...new Set(jobs.map(descriptionValue))]
+  return values.sort((a, b) => {
+    if (a === blankDescription) return 1
+    if (b === blankDescription) return -1
+    return a.localeCompare(b, "ja")
+  })
 }
 
 /**
@@ -51,8 +67,7 @@ export function filterJobs(jobs: JobListEntry[], filters: JobFilters): JobListEn
     const matchesSchedule =
       filters.scheduleKinds.length === 0 ||
       scheduleKinds(job).some((kind) => filters.scheduleKinds.includes(kind))
-    const matchesSource = filters.sources.length === 0 || filters.sources.includes(job.source)
-    const matchesFailed = !filters.failedOnly || hasFailedRun(job)
-    return matchesSchedule && matchesSource && matchesFailed
+    const matchesDescription = !filters.hiddenDescriptions.includes(descriptionValue(job))
+    return matchesSchedule && matchesDescription
   })
 }

@@ -1,3 +1,4 @@
+import { useState } from "react"
 import {
   Table,
   TableBody,
@@ -9,21 +10,18 @@ import {
 import {
   DropdownMenuCheckboxItem,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import { Input } from "@/components/ui/input"
 import { ColumnFilter } from "@/components/ColumnFilter"
 import { JobRow } from "@/components/JobRow"
-import {
-  scheduleKindOptions,
-  sourceOptions,
-  toggle,
-  type JobFilters,
-} from "@/lib/job-filters"
+import { scheduleKindOptions, toggle, type JobFilters } from "@/lib/job-filters"
 import type { JobListEntry } from "@/types"
 
 type JobListProps = {
   jobs: JobListEntry[]
+  // The values offered in the description header menu
+  descriptionValues: string[]
   loading: boolean
   filters: JobFilters
   onFiltersChange: (filters: JobFilters) => void
@@ -39,8 +37,69 @@ type JobListProps = {
 // Keep the menu open after a check, so several values can be picked in one go.
 const keepOpen = (event: Event) => event.preventDefault()
 
+type ValueFilterItemsProps = {
+  values: string[]
+  hidden: string[]
+  onHiddenChange: (hidden: string[]) => void
+}
+
+/**
+ * The value list of a spreadsheet column filter: a search box that narrows the list,
+ * "(すべて選択)", then one check per value. Unchecked values are hidden from the rows.
+ */
+function ValueFilterItems({ values, hidden, onHiddenChange }: ValueFilterItemsProps) {
+  const [query, setQuery] = useState("")
+  const needle = query.trim().toLowerCase()
+  const shown = needle === "" ? values : values.filter((v) => v.toLowerCase().includes(needle))
+  // "(すべて選択)" acts on the values the search leaves, as in a spreadsheet.
+  const allChecked = shown.every((v) => !hidden.includes(v))
+
+  return (
+    <>
+      <div className="p-1">
+        <Input
+          className="h-8"
+          placeholder="Search"
+          aria-label="Search values"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          // Keep the keys in the box instead of the menu's type-ahead and arrow keys.
+          onKeyDown={(event) => event.stopPropagation()}
+        />
+      </div>
+      <div className="max-h-64 max-w-80 overflow-y-auto">
+        <DropdownMenuCheckboxItem
+          checked={allChecked}
+          onCheckedChange={() =>
+            onHiddenChange(
+              allChecked
+                ? [...hidden, ...shown.filter((v) => !hidden.includes(v))]
+                : hidden.filter((v) => !shown.includes(v))
+            )
+          }
+          onSelect={keepOpen}
+        >
+          (すべて選択)
+        </DropdownMenuCheckboxItem>
+        {shown.map((value) => (
+          <DropdownMenuCheckboxItem
+            key={value}
+            checked={!hidden.includes(value)}
+            onCheckedChange={() => onHiddenChange(toggle(hidden, value))}
+            onSelect={keepOpen}
+            title={value}
+          >
+            <span className="truncate">{value}</span>
+          </DropdownMenuCheckboxItem>
+        ))}
+      </div>
+    </>
+  )
+}
+
 export function JobList({
   jobs,
+  descriptionValues,
   loading,
   filters,
   onFiltersChange,
@@ -60,7 +119,7 @@ export function JobList({
     )
   }
 
-  const descriptionFiltered = filters.failedOnly || filters.sources.length > 0
+  const descriptionFiltered = filters.hiddenDescriptions.length > 0
   const scheduleFiltered = filters.scheduleKinds.length > 0
 
   // The header stays even when nothing matches, so the filters can always be undone.
@@ -70,34 +129,18 @@ export function JobList({
         <TableRow>
           <TableHead>
             <ColumnFilter label="Description" active={descriptionFiltered}>
-              <DropdownMenuCheckboxItem
-                checked={filters.failedOnly}
-                onCheckedChange={(checked) =>
-                  onFiltersChange({ ...filters, failedOnly: checked === true })
+              <ValueFilterItems
+                values={descriptionValues}
+                hidden={filters.hiddenDescriptions}
+                onHiddenChange={(hiddenDescriptions) =>
+                  onFiltersChange({ ...filters, hiddenDescriptions })
                 }
-                onSelect={keepOpen}
-              >
-                直近の失敗だけ
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>Source</DropdownMenuLabel>
-              {sourceOptions.map((option) => (
-                <DropdownMenuCheckboxItem
-                  key={option.value}
-                  checked={filters.sources.includes(option.value)}
-                  onCheckedChange={() =>
-                    onFiltersChange({ ...filters, sources: toggle(filters.sources, option.value) })
-                  }
-                  onSelect={keepOpen}
-                >
-                  {option.label}
-                </DropdownMenuCheckboxItem>
-              ))}
+              />
               {descriptionFiltered && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
-                    onClick={() => onFiltersChange({ ...filters, failedOnly: false, sources: [] })}
+                    onClick={() => onFiltersChange({ ...filters, hiddenDescriptions: [] })}
                   >
                     Clear
                   </DropdownMenuItem>

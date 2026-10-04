@@ -1,11 +1,18 @@
 import { useState, useEffect, useCallback } from "react"
 import type { JobListEntry } from "@/types"
 import { listJobs } from "@/lib/invoke"
-import { filterJobs, noFilters, type JobFilters } from "@/lib/job-filters"
+import {
+  descriptionValues,
+  filterJobs,
+  noFilters,
+  type JobFilters,
+} from "@/lib/job-filters"
 
 type UseJobsReturn = {
   jobs: JobListEntry[]
   filteredJobs: JobListEntry[]
+  // The values offered in the description header menu
+  descriptionValues: string[]
   loading: boolean
   error: string | null
   filters: JobFilters
@@ -37,10 +44,15 @@ export function useJobs(): UseJobsReturn {
   }, [refresh])
 
   const filteredJobs = filterJobs(jobs, filters)
+  // Like a spreadsheet, the description menu offers the values left by the other filters.
+  const descriptionOptions = descriptionValues(
+    filterJobs(jobs, { ...filters, hiddenDescriptions: [] })
+  )
 
   return {
     jobs,
     filteredJobs,
+    descriptionValues: descriptionOptions,
     loading,
     error,
     filters,

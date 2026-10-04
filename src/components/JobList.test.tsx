@@ -1,9 +1,15 @@
 import { describe, it, expect, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { useState } from "react"
+import { render, screen, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { JobList } from "./JobList"
 import type { JobListEntry } from "@/types"
-import { noFilters } from "@/lib/job-filters"
+import {
+  descriptionValues,
+  filterJobs,
+  noFilters,
+  type JobFilters,
+} from "@/lib/job-filters"
 
 const mockJobs: JobListEntry[] = [
   {
@@ -45,6 +51,7 @@ describe("JobList", () => {
     render(
       <JobList
         jobs={[]}
+        descriptionValues={[]}
         loading={true}
         filters={noFilters}
         onFiltersChange={noop}
@@ -64,6 +71,7 @@ describe("JobList", () => {
     render(
       <JobList
         jobs={[]}
+        descriptionValues={[]}
         loading={false}
         filters={noFilters}
         onFiltersChange={noop}
@@ -83,6 +91,7 @@ describe("JobList", () => {
     render(
       <JobList
         jobs={mockJobs}
+        descriptionValues={[]}
         loading={false}
         filters={noFilters}
         onFiltersChange={noop}
@@ -105,6 +114,7 @@ describe("JobList", () => {
     render(
       <JobList
         jobs={mockJobs}
+        descriptionValues={[]}
         loading={false}
         filters={noFilters}
         onFiltersChange={noop}
@@ -125,6 +135,7 @@ describe("JobList", () => {
     render(
       <JobList
         jobs={mockJobs}
+        descriptionValues={[]}
         loading={false}
         filters={noFilters}
         onFiltersChange={noop}
@@ -148,6 +159,7 @@ describe("JobList", () => {
     render(
       <JobList
         jobs={mockJobs}
+        descriptionValues={[]}
         loading={false}
         filters={noFilters}
         onFiltersChange={noop}
@@ -168,6 +180,7 @@ describe("JobList", () => {
     render(
       <JobList
         jobs={mockJobs}
+        descriptionValues={[]}
         loading={false}
         filters={noFilters}
         onFiltersChange={noop}
@@ -190,6 +203,7 @@ describe("JobList", () => {
     render(
       <JobList
         jobs={mockJobs}
+        descriptionValues={[]}
         loading={false}
         filters={noFilters}
         onFiltersChange={noop}
@@ -212,8 +226,9 @@ describe("JobList", () => {
     render(
       <JobList
         jobs={[]}
+        descriptionValues={[]}
         loading={false}
-        filters={{ ...noFilters, failedOnly: true }}
+        filters={{ ...noFilters, hiddenDescriptions: ["Runs the example job"] }}
         onFiltersChange={noop}
         onStart={noop}
         onStop={noop}
@@ -233,6 +248,7 @@ describe("JobList", () => {
     render(
       <JobList
         jobs={mockJobs}
+        descriptionValues={[]}
         loading={false}
         filters={{ ...noFilters, scheduleKinds: ["daily"] }}
         onFiltersChange={noop}
@@ -261,6 +277,7 @@ describe("JobList", () => {
     render(
       <JobList
         jobs={mockJobs}
+        descriptionValues={[]}
         loading={false}
         filters={{ ...noFilters, scheduleKinds: ["daily"] }}
         onFiltersChange={onFiltersChange}
@@ -281,12 +298,103 @@ describe("JobList", () => {
     })
   })
 
-  it("sets failed-only and sources from the description header menu", async () => {
+  it("offers each description value once, sorted, with the blank value last", async () => {
+    const user = userEvent.setup()
+    const jobs = [
+      ...mockJobs,
+      { ...mockJobs[0], label: "com.example.again", plist_path: "/again.plist" },
+      { ...mockJobs[0], label: "com.example.another", plist_path: "/another.plist", description: "Backs up files" },
+    ]
+    render(
+      <JobList
+        jobs={jobs}
+        descriptionValues={descriptionValues(jobs)}
+        loading={false}
+        filters={noFilters}
+        onFiltersChange={noop}
+        onStart={noop}
+        onStop={noop}
+        onRestart={noop}
+        onKickstart={noop}
+        onDelete={noop}
+        onSelect={noop}
+        onRevealInFinder={noop}
+      />
+    )
+    await user.click(screen.getByRole("button", { name: "Filter Description" }))
+    const menu = await screen.findByRole("menu")
+    expect(within(menu).getByRole("textbox", { name: "Search values" })).toBeInTheDocument()
+    expect(
+      within(menu)
+        .getAllByRole("menuitemcheckbox")
+        .map((item) => [item.textContent, item.getAttribute("aria-checked")])
+    ).toEqual([
+      ["(すべて選択)", "true"],
+      ["Backs up files", "true"],
+      ["Runs the example job", "true"],
+      ["(空白)", "true"],
+    ])
+    expect(within(menu).queryByText("直近の失敗だけ")).not.toBeInTheDocument()
+    expect(within(menu).queryByText("Daemon")).not.toBeInTheDocument()
+  })
+
+  it("hides the rows of an unchecked value and brings them back", async () => {
+    const user = userEvent.setup()
+    function Harness() {
+      const [filters, setFilters] = useState<JobFilters>(noFilters)
+      return (
+        <JobList
+          jobs={filterJobs(mockJobs, filters)}
+          descriptionValues={descriptionValues(mockJobs)}
+          loading={false}
+          filters={filters}
+          onFiltersChange={setFilters}
+          onStart={noop}
+          onStop={noop}
+          onRestart={noop}
+          onKickstart={noop}
+          onDelete={noop}
+          onSelect={noop}
+          onRevealInFinder={noop}
+        />
+      )
+    }
+    render(<Harness />)
+    const filterButton = screen.getByRole("button", { name: "Filter Description" })
+    await user.click(filterButton)
+    await user.click(await screen.findByRole("menuitemcheckbox", { name: "(空白)" }))
+    // The menu stays open, so another value can be switched right away.
+    expect(screen.getByRole("menuitemcheckbox", { name: "(空白)" })).toHaveAttribute(
+      "aria-checked",
+      "false"
+    )
+    expect(screen.getByRole("menuitemcheckbox", { name: "(すべて選択)" })).toHaveAttribute(
+      "aria-checked",
+      "false"
+    )
+    // The open menu hides the rest of the page from the accessibility tree.
+    expect(screen.getByRole("table", { hidden: true })).not.toHaveTextContent("com.example.stopped")
+    expect(screen.getByRole("table", { hidden: true })).toHaveTextContent("Runs the example job")
+    expect(filterButton).toHaveAttribute("data-active", "true")
+
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "(すべて選択)" }))
+    expect(screen.getByRole("table", { hidden: true })).toHaveTextContent("com.example.stopped")
+    expect(filterButton).toHaveAttribute("data-active", "false")
+
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "(すべて選択)" }))
+    expect(screen.getByText("No agents found")).toBeInTheDocument()
+    await user.click(screen.getByRole("menuitem", { name: "Clear" }))
+    expect(screen.getByRole("table", { hidden: true })).toHaveTextContent("Runs the example job")
+    expect(screen.getByRole("table", { hidden: true })).toHaveTextContent("com.example.stopped")
+  })
+
+  it("narrows only the value list with the search box", async () => {
     const user = userEvent.setup()
     const onFiltersChange = vi.fn()
     render(
       <JobList
         jobs={mockJobs}
+        descriptionValues={descriptionValues(mockJobs)}
         loading={false}
         filters={noFilters}
         onFiltersChange={onFiltersChange}
@@ -300,16 +408,26 @@ describe("JobList", () => {
       />
     )
     await user.click(screen.getByRole("button", { name: "Filter Description" }))
-    await user.click(await screen.findByRole("menuitemcheckbox", { name: "直近の失敗だけ" }))
-    expect(onFiltersChange).toHaveBeenLastCalledWith({ ...noFilters, failedOnly: true })
-    await user.click(screen.getByRole("menuitemcheckbox", { name: "Daemon" }))
-    expect(onFiltersChange).toHaveBeenLastCalledWith({ ...noFilters, sources: ["SystemDaemon"] })
+    await user.type(await screen.findByRole("textbox", { name: "Search values" }), "EXAMPLE")
+    expect(
+      screen.getAllByRole("menuitemcheckbox").map((item) => item.textContent)
+    ).toEqual(["(すべて選択)", "Runs the example job"])
+    expect(onFiltersChange).not.toHaveBeenCalled()
+    expect(screen.getByRole("table", { hidden: true })).toHaveTextContent("com.example.stopped")
+
+    // "(すべて選択)" switches only the values the search leaves.
+    await user.click(screen.getByRole("menuitemcheckbox", { name: "(すべて選択)" }))
+    expect(onFiltersChange).toHaveBeenLastCalledWith({
+      ...noFilters,
+      hiddenDescriptions: ["Runs the example job"],
+    })
   })
 
   it("shows a description that came from the description table like any other", () => {
     render(
       <JobList
         jobs={[{ ...mockJobs[1], label: "com.google.keystone.agent", description: "Google のアプリの更新" }]}
+        descriptionValues={[]}
         loading={false}
         filters={noFilters}
         onFiltersChange={noop}
