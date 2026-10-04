@@ -28,6 +28,7 @@ import { useTheme } from "@/hooks/useTheme"
 function App() {
   const {
     filteredJobs,
+    descriptionValues,
     loading,
     error,
     filters,
@@ -144,6 +145,7 @@ function App() {
         <div className="rounded-md border">
           <JobList
             jobs={filteredJobs}
+            descriptionValues={descriptionValues}
             loading={loading}
             filters={filters}
             onFiltersChange={setFilters}
